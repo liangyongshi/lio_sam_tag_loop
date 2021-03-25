@@ -282,7 +282,7 @@ public:
             return;
 //        if (abs(msg->tags_information[0].stamp-cloudKeyPoses6D->points.back().time)<0.01 && //这个条件原计划是保证tag和关键帧的时间一致性
 
-        if (msg->tags_information[0].pose.position.z < 1.0) {
+        if (msg->tags_information[0].pose.position.z < 1.1) {
             // std::cout<<"aaaaaaaa"<<std::endl;
 
             tagTemp.id = msg->tags_information[0].id;
