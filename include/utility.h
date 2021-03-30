@@ -139,6 +139,8 @@ public:
     // Loop closure
     bool  loopClosureEnableFlag;
     bool  tagloopClosureEnableFlag;
+    double tagErr;
+    float tagDistance;
     float loopClosureFrequency;
     int   surroundingKeyframeSize;
     float historyKeyframeSearchRadius;
@@ -231,7 +233,11 @@ public:
         nh.param<float>("lio_sam/surroundingKeyframeSearchRadius", surroundingKeyframeSearchRadius, 50.0);
 
         nh.param<bool>("lio_sam/loopClosureEnableFlag", loopClosureEnableFlag, false);
-        nh.param<bool>("lio_sam/loopClosureEnableFlag", tagloopClosureEnableFlag, false);
+        nh.param<bool>("lio_sam/tagloopClosureEnableFlag", tagloopClosureEnableFlag, false);
+
+        nh.param<double>("lio_sam/tagErr", tagErr, 1e-8);
+        nh.param<float>("lio_sam/tagDistance", tagDistance, 1.0);
+
         nh.param<float>("lio_sam/loopClosureFrequency", loopClosureFrequency, 1.0);
         nh.param<int>("lio_sam/surroundingKeyframeSize", surroundingKeyframeSize, 50);
         nh.param<float>("lio_sam/historyKeyframeSearchRadius", historyKeyframeSearchRadius, 10.0);

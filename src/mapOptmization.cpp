@@ -275,29 +275,33 @@ public:
     }
 
     void tagCallback(const zapriltag_ros::TagsDetection_msg::ConstPtr &msg) {
-//        if (tagloopClosureEnableFlag==false)
-//            return;
+
+//        std::cout<<"tagloopClosureEnableFlag:"<<tagloopClosureEnableFlag<<std::endl;
+        if (tagloopClosureEnableFlag==false) return;
+
         static int id_temp{-1};
         if (msg->tags_information.empty())
             return;
-//        if (abs(msg->tags_information[0].stamp-cloudKeyPoses6D->points.back().time)<0.01 && //这个条件原计划是保证tag和关键帧的时间一致性
 
-        if (msg->tags_information[0].pose.position.z < 1.1) {
-            // std::cout<<"aaaaaaaa"<<std::endl;
-
+//        std::cout<<"tagDistance"<<tagDistance<<std::endl;
+//        std::cout<<"tagErr"<<tagErr<<std::endl;
+//        if(msg->tags_information[0].err < tagErr &)//原计划是根据重投影误差判断，但是这样就少了空间限制，反而失去了tag和关键帧之间的空间约束
+        if(msg->tags_information[0].pose.position.z < tagDistance)
+        {
+            std::cout<<"error of tag:"<<msg->tags_information[0].err<<std::endl;
             tagTemp.id = msg->tags_information[0].id;
             tagTemp.time_stamp = msg->tags_information[0].stamp;
             tagTemp.tagpose = msg->tags_information[0].pose;
 
-            if(!tag_map.count(tagTemp.id)){
+            if(!tag_map.count(tagTemp.id) || tag_map.empty()){
 
                 forceSaveKey = true;
                 saveKeyFramesAndFactor();
                 forceSaveKey = false;
                 tagTemp.correspondingRobotPoseID = cloudKeyPoses6D->points.size() - 1;
                 tag_vector.emplace_back(tagTemp);
-
                 tag_map[tagTemp.id] = tag_vector.size()-1;
+                std::cout<<"add first tag or different tag"<<std::endl;
             }
             else{
                 tag pre_tag = tag_vector[tag_map[tagTemp.id]];
@@ -345,13 +349,13 @@ public:
                     Eigen::Affine3f p1 = pclPointToAffine3f(posePre);
                     Eigen::Affine3f poseCorrect = p2 * Eigen::Affine3f(T21);
 
-                    std::cout << "posePre:" << poseCorrect.matrix() << std::endl;
-                    std::cout << "poseCorrect:" << p1.matrix() << std::endl;
+                    std::cout << "poseCorrect:" << poseCorrect.matrix() << std::endl;
+                    std::cout << "posePre:" << p1.matrix() << std::endl;
                     pcl::getTranslationAndEulerAngles(poseCorrect, lxx, lyy, lzz, lroll, lpitch, lyaw);
                     gtsam::Pose3 posef = Pose3(Rot3::RzRyRx(lroll, lpitch, lyaw), Point3(lxx, lyy, lzz));
                     gtsam::Pose3 poset = pclPointTogtsamPose3(posePre);
                     gtsam::Vector Vector6(6);
-                    Vector6 << 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3;
+                    Vector6 << 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1;
                     noiseModel::Diagonal::shared_ptr constNoise = noiseModel::Diagonal::Variances(Vector6);
                     mtx.lock();
                     loopTagQueue.push_back(
@@ -1632,6 +1636,7 @@ public:
             isam->update();
             isam->update();
             isam->update();
+            std::cout<<"loop optimization"<<std::endl;
         }
 
         gtSAMgraph.resize(0);
@@ -1688,6 +1693,7 @@ public:
 
         // save path for visualization
         updatePath(thisPose6D);
+        std:cout<<"optimization end"<<std::endl;
     }
 
     void correctPoses() {
@@ -1853,12 +1859,12 @@ int main(int argc, char **argv) {
 
     ROS_INFO("\033[1;32m----> Map Optimization Started.\033[0m");
 
-    std::thread loopthread(&mapOptimization::loopClosureThread, &MO);
+//    std::thread loopthread(&mapOptimization::loopClosureThread, &MO);
     std::thread visualizeMapThread(&mapOptimization::visualizeGlobalMapThread, &MO);
 
     ros::spin();
 
-    loopthread.join();
+    //loopthread.join();
     visualizeMapThread.join();
 
     return 0;
