@@ -15,7 +15,7 @@
     <!--include file="$(find lio_sam)/launch/include/module_navsat.launch" /-->
 
     <!--- Run Rviz-->
-    <include file="$(find lio_sam)/launch/include/module_rviz.launch" />
+    <!--include file="$(find lio_sam)/launch/include/module_rviz.launch" /-->
     
     <!--Run AprilTag detect-->
     <include file="$(find zapriltag_ros)/launch/zapriltag_ros.launch" />

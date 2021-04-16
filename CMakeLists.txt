@@ -74,7 +74,7 @@ include_directories(
 # link directories
 link_directories(
 	include
-	${PCL_LIBRARY_DIRS}
+  ${PCL_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
   ${GTSAM_LIBRARY_DIRS}
 )
@@ -103,3 +103,7 @@ target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_L
 # IMU Preintegration
 add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
 target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam tbb)
+
+add_executable(odom2txt src/odom2txt.cpp)
+target_link_libraries(odom2txt ${catkin_LIBRARIES})
+

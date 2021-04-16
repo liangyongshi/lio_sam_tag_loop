@@ -288,7 +288,7 @@ public:
 //        if(msg->tags_information[0].err < tagErr &)//原计划是根据重投影误差判断，但是这样就少了空间限制，反而失去了tag和关键帧之间的空间约束
         if(msg->tags_information[0].pose.position.z < tagDistance)
         {
-            std::cout<<"error of tag:"<<msg->tags_information[0].err<<std::endl;
+            //std::cout<<"error of tag:"<<msg->tags_information[0].err<<std::endl;
             tagTemp.id = msg->tags_information[0].id;
             tagTemp.time_stamp = msg->tags_information[0].stamp;
             tagTemp.tagpose = msg->tags_information[0].pose;
@@ -301,22 +301,22 @@ public:
                 tagTemp.correspondingRobotPoseID = cloudKeyPoses6D->points.size() - 1;
                 tag_vector.emplace_back(tagTemp);
                 tag_map[tagTemp.id] = tag_vector.size()-1;
-                std::cout<<"add first tag or different tag"<<std::endl;
+              //  std::cout<<"add first tag or different tag"<<std::endl;
             }
             else{
                 tag pre_tag = tag_vector[tag_map[tagTemp.id]];
                 if( id_temp != tagTemp.id &&tagTemp.time_stamp - pre_tag.time_stamp > tag_time_shift){
                     forceSaveKey = true;
-                    std::cout << "loop tag pre cloudKeyPoses6D->points.size:" << cloudKeyPoses6D->points.size()
-                              << std::endl;
+                   // std::cout << "loop tag pre cloudKeyPoses6D->points.size:" << cloudKeyPoses6D->points.size()
+                  //            << std::endl;
                     saveKeyFramesAndFactor();
                     forceSaveKey = false;
-                    std::cout << "loop tag after cloudKeyPoses6D->points.size:" << cloudKeyPoses6D->points.size()
-                              << std::endl;
+                   // std::cout << "loop tag after cloudKeyPoses6D->points.size:" << cloudKeyPoses6D->points.size()
+                   //           << std::endl;
                     tagTemp.correspondingRobotPoseID = cloudKeyPoses6D->points.size() - 1;
 
                     loopdetect = true;
-
+                    double tag_loop_begin = ros::Time::now().toSec();
                     PointTypePose posePre, poseCur;
                     float lxx, lyy, lzz, lroll, lpitch, lyaw;
                     geometry_msgs::Pose lidarCur2tag, lidarPre2tag;
@@ -327,10 +327,10 @@ public:
                     lidarCur2tag = tagTemp.tagpose;
                     lidarPre2tag = pre_tag.tagpose;
 
-                    std::cout << "lidarCur2tag:" << lidarCur2tag.position.x << " " << lidarCur2tag.position.y << " "
-                              << lidarCur2tag.position.z << std::endl;
-                    std::cout << "lidarPre2tag:" << lidarPre2tag.position.x << " " << lidarPre2tag.position.y << " "
-                              << lidarPre2tag.position.z << std::endl;
+                   // std::cout << "lidarCur2tag:" << lidarCur2tag.position.x << " " << lidarCur2tag.position.y << " "
+                   //           << lidarCur2tag.position.z << std::endl;
+                 //   std::cout << "lidarPre2tag:" << lidarPre2tag.position.x << " " << lidarPre2tag.position.y << " "
+                   //           << lidarPre2tag.position.z << std::endl;
 
                     Eigen::Affine3d rc2tag, rc2tag_temp;
                     Eigen::Affine3d rp2tag, rp2tag_temp;
@@ -340,17 +340,17 @@ public:
                     rc2tag_temp = Lidar2Camera * rc2tag;
                     rp2tag_temp = Lidar2Camera * rp2tag;
 
-                    std::cout << "rc2tag_temp:" << rc2tag_temp.matrix() << std::endl;
-                    std::cout << "rp2tag_temp:" << rp2tag_temp.matrix() << std::endl;
+                   // std::cout << "rc2tag_temp:" << rc2tag_temp.matrix() << std::endl;
+                 //   std::cout << "rp2tag_temp:" << rp2tag_temp.matrix() << std::endl;
 
                     Eigen::Affine3d T21 = rc2tag_temp * rp2tag_temp.inverse();
-                    std::cout << "T21:" << T21.matrix() << std::endl;
+                   // std::cout << "T21:" << T21.matrix() << std::endl;
                     Eigen::Affine3f p2 = pclPointToAffine3f(poseCur);
                     Eigen::Affine3f p1 = pclPointToAffine3f(posePre);
                     Eigen::Affine3f poseCorrect = p2 * Eigen::Affine3f(T21);
 
-                    std::cout << "poseCorrect:" << poseCorrect.matrix() << std::endl;
-                    std::cout << "posePre:" << p1.matrix() << std::endl;
+                   // std::cout << "poseCorrect:" << poseCorrect.matrix() << std::endl;
+                  //  std::cout << "posePre:" << p1.matrix() << std::endl;
                     pcl::getTranslationAndEulerAngles(poseCorrect, lxx, lyy, lzz, lroll, lpitch, lyaw);
                     gtsam::Pose3 posef = Pose3(Rot3::RzRyRx(lroll, lpitch, lyaw), Point3(lxx, lyy, lzz));
                     gtsam::Pose3 poset = pclPointTogtsamPose3(posePre);
@@ -364,6 +364,8 @@ public:
                     loopTagNoiseQueue.push_back(constNoise);
                     mtx.unlock();
                     loopTagIndexContainer[tagTemp.correspondingRobotPoseID] = pre_tag.correspondingRobotPoseID;
+                    double tag_loop_end = ros::Time::now().toSec();
+                    std::cout<<"tag loop time:"<<tag_loop_end-tag_loop_begin<<std::endl;
                 }
                 id_temp = tagTemp.id;
             }
@@ -644,7 +646,7 @@ public:
     void performLoopClosure() {
         if (cloudKeyPoses3D->points.empty() == true)
             return;
-
+        double icp_loop_begin=ros::Time::now().toSec();
         mtx.lock();
         *copy_cloudKeyPoses3D = *cloudKeyPoses3D;
         *copy_cloudKeyPoses6D = *cloudKeyPoses6D;
@@ -716,9 +718,11 @@ public:
         loopPoseQueue.push_back(poseFrom.between(poseTo));
         loopNoiseQueue.push_back(constraintNoise);
         mtx.unlock();
-
         // add loop constriant
         loopIndexContainer[loopKeyCur] = loopKeyPre;
+        double icp_loop_end = ros::Time::now().toSec();
+        std::cout<<"icp loop time:"<<icp_loop_end-icp_loop_begin<<std::endl;
+        
     }
 
     bool detectLoopClosureDistance(int *latestID, int *closestID) {
@@ -1619,7 +1623,7 @@ public:
 //        addGPSFactor();
 
         // loop factor
-//        addLoopFactor();
+        addLoopFactor();
 
         addTagLoopFactor();
 
@@ -1636,7 +1640,7 @@ public:
             isam->update();
             isam->update();
             isam->update();
-            std::cout<<"loop optimization"<<std::endl;
+            
         }
 
         gtSAMgraph.resize(0);
@@ -1693,7 +1697,7 @@ public:
 
         // save path for visualization
         updatePath(thisPose6D);
-        std:cout<<"optimization end"<<std::endl;
+       
     }
 
     void correctPoses() {
@@ -1859,12 +1863,12 @@ int main(int argc, char **argv) {
 
     ROS_INFO("\033[1;32m----> Map Optimization Started.\033[0m");
 
-//    std::thread loopthread(&mapOptimization::loopClosureThread, &MO);
+    std::thread loopthread(&mapOptimization::loopClosureThread, &MO);
     std::thread visualizeMapThread(&mapOptimization::visualizeGlobalMapThread, &MO);
 
     ros::spin();
 
-    //loopthread.join();
+    loopthread.join();
     visualizeMapThread.join();
 
     return 0;
